@@ -9,11 +9,17 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal, ROUND_DOWN
 from typing import Dict, Tuple
+"""Order execution and simulation layer."""
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Dict
 
 from binance.client import Client
 
 from .config import Config
 from .symbols import SymbolCache, SymbolFilters
+from .symbols import SymbolCache
 
 
 @dataclass
@@ -78,6 +84,7 @@ def size_position(symbol: str, px: float, cfg: Config, filters: Dict[str, Symbol
     return qty, ""
 
 
+
 class Executor:
     def __init__(self, client: Client, symbols: SymbolCache, config: Config):
         self.client = client
@@ -88,7 +95,9 @@ class Executor:
         return notional * self.config.FEE_TAKER
 
     def simulate(self, symbol: str, side: str, qty: float, price: float) -> ExecutionResult:
-        price = format_price(symbol, price, self.symbols.filters)
+
+        price = self.symbols.format_price(symbol, price)
+        qty = self.symbols.format_qty(symbol, qty)
         notional = qty * price
         fee = self._calc_fee(notional)
         return ExecutionResult(symbol, side, qty, price, notional, fee, executed=False)
@@ -119,3 +128,4 @@ __all__ = [
     "size_position",
 ]
 
+__all__ = ["Executor", "ExecutionResult"]

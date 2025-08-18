@@ -16,6 +16,7 @@ from .executor import (
     size_position,
     notional_ok,
 )
+from .executor import Executor
 from .risk import Position, RiskManager
 from .symbols import SymbolCache
 from .logger import get_logger
@@ -31,6 +32,7 @@ class FabioStrategy:
         self.data: Dict[str, pd.DataFrame] = {s: pd.DataFrame(columns=["price", "volume"]) for s in config.WATCHLIST}
         self.positions: Dict[str, Position] = {}
         self._decision_memo: Dict[str, tuple[float, str, float]] = {}
+
 
     def on_tick(self, symbol: str, bid: float, ask: float, volume: float = 0.0) -> Optional[Position]:
         mid = (bid + ask) / 2
@@ -135,6 +137,21 @@ class FabioStrategy:
             return False
         self._decision_memo[symbol] = (rounded, grade, now)
         return True
+        if score.grade == "A" and self.risk.can_trade():
+            qty = self.config.MAX_CAPITAL_USDT / ask
+            qty = self.symbols.format_qty(symbol, qty)
+            stop = mid * (1 - self.config.STOP_LOSS_BPS / 10000)
+            tp = mid * (1 + self.config.PROFIT_TAKE_BPS / 10000)
+            pos = Position(symbol, "LONG", mid, stop, tp, qty)
+            self.positions[symbol] = pos
+            result = self.executor.simulate(symbol, "BUY", qty, ask)
+            self.logger.info(f"[BUY] {symbol} qty={qty:.6f} px={ask:.2f} notional={result.notional:.2f} fee={result.fee:.4f}")
+            self.logger.debug("[DECISION] " + format_fallback(score, mid, stop, qty, ""))
+            return pos
+
+        if self.config.DEBUG:
+            self.logger.debug("[DECISION] " + format_fallback(score, mid, mid * (1 - self.config.STOP_LOSS_BPS / 10000), 0.0, ""))
+        return None
 
 
 __all__ = ["FabioStrategy"]

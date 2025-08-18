@@ -54,6 +54,10 @@ def format_fallback(
     return (
         f"dir=long grade={result.grade} px={price:.8f} stop={stop:.8f} "
         f"{risk_label}={risk_val:.4f} qty_est≈{qty_est:.4f} {flags}"
+def format_fallback(result: ScoreResult, price: float, stop: float, qty_est: float, flags: str) -> str:
+    return (
+        f"dir=long grade={result.grade} px={price:.8f} stop={stop:.8f} "
+        f"risk≈{abs(price-stop):.4f} qty_est≈{qty_est:.4f} {flags}"
     )
 
 

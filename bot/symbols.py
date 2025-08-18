@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from decimal import Decimal, ROUND_DOWN
+
 from typing import Dict
 
 from binance.client import Client
@@ -39,6 +40,14 @@ def fetch_symbol_filters(client: Client, symbols: list[str]) -> Dict[str, Symbol
             step_size=_float(lot["stepSize"]),
             min_qty=_float(lot["minQty"]),
             min_notional=_float(min_notional.get("minNotional", "0")),
+        lot = fs.get("LOT_SIZE", {})
+        tick = fs.get("PRICE_FILTER", {})
+        min_notional = fs.get("MIN_NOTIONAL", {}).get("minNotional", 0)
+        filters[symbol] = SymbolFilters(
+            tick_size=_float(tick.get("tickSize", "0.00000001")),
+            step_size=_float(lot.get("stepSize", "0.00000001")),
+            min_qty=_float(lot.get("minQty", "0.0")),
+            min_notional=_float(min_notional or "0.0"),
         )
     return filters
 
@@ -88,6 +97,22 @@ class SymbolCache:
         if qty < self.min_qty(symbol):
             return False
         if qty * price < self.min_notional(symbol):
+
+    def format_price(self, symbol: str, price: float) -> float:
+        f = self.filters[symbol]
+        step = f.tick_size
+        return round(price / step) * step
+
+    def format_qty(self, symbol: str, qty: float) -> float:
+        f = self.filters[symbol]
+        step = f.step_size
+        return round(qty / step) * step
+
+    def validate(self, symbol: str, qty: float, price: float) -> bool:
+        f = self.filters[symbol]
+        if qty < f.min_qty:
+            return False
+        if qty * price < f.min_notional:
             return False
         return True
 

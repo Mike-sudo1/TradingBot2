@@ -88,6 +88,7 @@ def load_config() -> Config:
         ENTRY_MIN_GRADE=env.get("ENTRY_MIN_GRADE", "B").upper(),
         ENTRY_MIN_SCORE=_float(env, "ENTRY_MIN_SCORE", 0.0),
         RISK_UNIT=env.get("RISK_UNIT", "bps").lower(),
+
     )
 
 

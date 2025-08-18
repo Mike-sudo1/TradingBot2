@@ -36,6 +36,7 @@ Important variables:
 - `ENTRY_MIN_SCORE` – minimum numerical score override (default 0)
 - `RISK_UNIT` – `bps` or `usdt` for risk printouts
 
+
 ## Running
 
 Paper trading mode (default):
