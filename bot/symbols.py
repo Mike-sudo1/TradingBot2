@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from decimal import Decimal, ROUND_DOWN
 from typing import Dict
 
 from binance.client import Client
@@ -53,6 +54,8 @@ class SymbolCache:
                 f"minQty={f.min_qty:.8f} minNotional={f.min_notional:.2f}"
             )
 
+    # --- basic accessors -------------------------------------------------
+
     def step_size(self, symbol: str) -> float:
         return self.filters[symbol].step_size
 
@@ -64,6 +67,29 @@ class SymbolCache:
 
     def min_notional(self, symbol: str) -> float:
         return self.filters[symbol].min_notional
+
+    # --- helpers mirroring executor formatting ---------------------------
+
+    @staticmethod
+    def _quantize(value: float, step: float) -> float:
+        if step == 0:
+            return value
+        d_val = Decimal(str(value))
+        d_step = Decimal(str(step))
+        return float((d_val / d_step).to_integral_value(rounding=ROUND_DOWN) * d_step)
+
+    def format_price(self, symbol: str, price: float) -> float:
+        return self._quantize(price, self.tick_size(symbol))
+
+    def format_qty(self, symbol: str, qty: float) -> float:
+        return self._quantize(qty, self.step_size(symbol))
+
+    def validate(self, symbol: str, qty: float, price: float) -> bool:
+        if qty < self.min_qty(symbol):
+            return False
+        if qty * price < self.min_notional(symbol):
+            return False
+        return True
 
 
 __all__ = ["SymbolFilters", "fetch_symbol_filters", "SymbolCache"]
