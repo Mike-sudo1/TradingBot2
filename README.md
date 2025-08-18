@@ -32,6 +32,10 @@ Important variables:
 - `LIVE` – set `true` to send real orders
 - `WATCHLIST` – comma separated symbols, e.g. `BTCUSDT,ETHUSDT`
 - `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` for notifications (optional)
+- `ENTRY_MIN_GRADE` – minimum Fabio grade to allow entries (`A`>`B`>`C`)
+- `ENTRY_MIN_SCORE` – minimum numerical score override (default 0)
+- `RISK_UNIT` – `bps` or `usdt` for risk printouts
+
 
 ## Running
 

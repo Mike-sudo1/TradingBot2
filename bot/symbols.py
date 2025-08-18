@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from decimal import Decimal, ROUND_DOWN
+
 from typing import Dict
 
 from binance.client import Client
@@ -28,6 +30,16 @@ def fetch_symbol_filters(client: Client, symbols: list[str]) -> Dict[str, Symbol
         if symbol not in symbols:
             continue
         fs = {f["filterType"]: f for f in s["filters"]}
+        lot = fs.get("LOT_SIZE")
+        tick = fs.get("PRICE_FILTER")
+        min_notional = fs.get("MIN_NOTIONAL")
+        if not (lot and tick and min_notional):
+            raise ValueError(f"Missing filters for {symbol}")
+        filters[symbol] = SymbolFilters(
+            tick_size=_float(tick["tickSize"]),
+            step_size=_float(lot["stepSize"]),
+            min_qty=_float(lot["minQty"]),
+            min_notional=_float(min_notional.get("minNotional", "0")),
         lot = fs.get("LOT_SIZE", {})
         tick = fs.get("PRICE_FILTER", {})
         min_notional = fs.get("MIN_NOTIONAL", {}).get("minNotional", 0)
@@ -45,6 +57,46 @@ class SymbolCache:
 
     def __init__(self, filters: Dict[str, SymbolFilters]):
         self.filters = filters
+        for sym, f in filters.items():
+            print(
+                f"[FILTERS] {sym} step={f.step_size:.8f} tick={f.tick_size:.8f} "
+                f"minQty={f.min_qty:.8f} minNotional={f.min_notional:.2f}"
+            )
+
+    # --- basic accessors -------------------------------------------------
+
+    def step_size(self, symbol: str) -> float:
+        return self.filters[symbol].step_size
+
+    def tick_size(self, symbol: str) -> float:
+        return self.filters[symbol].tick_size
+
+    def min_qty(self, symbol: str) -> float:
+        return self.filters[symbol].min_qty
+
+    def min_notional(self, symbol: str) -> float:
+        return self.filters[symbol].min_notional
+
+    # --- helpers mirroring executor formatting ---------------------------
+
+    @staticmethod
+    def _quantize(value: float, step: float) -> float:
+        if step == 0:
+            return value
+        d_val = Decimal(str(value))
+        d_step = Decimal(str(step))
+        return float((d_val / d_step).to_integral_value(rounding=ROUND_DOWN) * d_step)
+
+    def format_price(self, symbol: str, price: float) -> float:
+        return self._quantize(price, self.tick_size(symbol))
+
+    def format_qty(self, symbol: str, qty: float) -> float:
+        return self._quantize(qty, self.step_size(symbol))
+
+    def validate(self, symbol: str, qty: float, price: float) -> bool:
+        if qty < self.min_qty(symbol):
+            return False
+        if qty * price < self.min_notional(symbol):
 
     def format_price(self, symbol: str, price: float) -> float:
         f = self.filters[symbol]

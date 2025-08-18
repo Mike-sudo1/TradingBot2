@@ -37,6 +37,10 @@ class Config:
     MAX_OPEN_TRADES: int = 1
     SLIPPAGE_BPS: float = 2.0
 
+    ENTRY_MIN_GRADE: str = "B"
+    ENTRY_MIN_SCORE: float = 0.0
+    RISK_UNIT: str = "bps"  # 'bps' or 'usdt'
+
     TELEGRAM_BOT_TOKEN: str | None = None
     TELEGRAM_CHAT_ID: str | None = None
 
@@ -81,6 +85,10 @@ def load_config() -> Config:
         SLIPPAGE_BPS=_float(env, "SLIPPAGE_BPS", 2.0),
         TELEGRAM_BOT_TOKEN=env.get("TELEGRAM_BOT_TOKEN"),
         TELEGRAM_CHAT_ID=env.get("TELEGRAM_CHAT_ID"),
+        ENTRY_MIN_GRADE=env.get("ENTRY_MIN_GRADE", "B").upper(),
+        ENTRY_MIN_SCORE=_float(env, "ENTRY_MIN_SCORE", 0.0),
+        RISK_UNIT=env.get("RISK_UNIT", "bps").lower(),
+
     )
 
 

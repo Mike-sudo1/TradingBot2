@@ -42,6 +42,18 @@ def fabio_score(symbol: str, *, trend: bool, macd_hist: float, rsi: float, vwap_
     return ScoreResult(symbol=symbol, score=score, grade=grade, details=details)
 
 
+def format_fallback(
+    result: ScoreResult,
+    price: float,
+    stop: float,
+    qty_est: float,
+    risk_label: str,
+    risk_val: float,
+    flags: str,
+) -> str:
+    return (
+        f"dir=long grade={result.grade} px={price:.8f} stop={stop:.8f} "
+        f"{risk_label}={risk_val:.4f} qty_est≈{qty_est:.4f} {flags}"
 def format_fallback(result: ScoreResult, price: float, stop: float, qty_est: float, flags: str) -> str:
     return (
         f"dir=long grade={result.grade} px={price:.8f} stop={stop:.8f} "
